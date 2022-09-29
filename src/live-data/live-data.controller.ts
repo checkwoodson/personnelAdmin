@@ -20,13 +20,4 @@ export class LiveDataController {
   test() {
     return '这是个测试是否跨域的接口';
   }
-  // fileupload 单独抽离
-  // @Post('upload')
-  // @UseInterceptors(FileInterceptor('file'))
-  // uploadFile(
-  //   @UploadedFile()
-  //   file: Express.Multer.File,
-  // ) {
-  //   return this.liveDataService.uploadFile(file);
-  // }
 }

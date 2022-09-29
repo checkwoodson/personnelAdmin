@@ -56,12 +56,19 @@ export class LiveDataService {
     await this.getSqlName(this.anchors);
     data.forEach(async (item) => {
       //const gameId = await this.getSqlId(item.gameName, this.games);
-      //console.log(gameId);
-      item[item.gameName].forEach(async (item) => {
-        const anchorId = await this.getSqlId(item.anchor, this.anchors);
-        console.log(anchorId);
+      const anchor = this.uniqueFunc(item[item.gameName], 'anchor');
+      anchor.forEach(async (item) => {
+        if (item.anchor === '') return;
+        await this.getSqlId(item.anchor, this.anchors);
       });
     });
+  }
+  uniqueFunc(arr, uniId) {
+    let obj = {};
+    return arr.reduce((accum, item) => {
+      obj[item[uniId]] ? '' : (obj[item[uniId]] = true && accum.push(item));
+      return accum;
+    }, []);
   }
   // 查询子表的id和name
   async getSqlName(sqlName) {
@@ -77,18 +84,11 @@ export class LiveDataService {
     if (sqlId) {
       return sqlId;
     }
-    // sqlId = await entity.insert({ name });
-    // await this.findData.set(name, await sqlId.raw.insertId);
-    // return await sqlId.raw.insertId;
-    return this.f(name, entity);
-  }
-
-  f(name, entity) {
-    new Promise(async (resolve) => {
-      let aa = entity.insert({ name });
-      resolve(await (await aa?.raw)?.insertId);
+    return new Promise(async (resolve) => {
+      const sqlData = await entity.insert({ name });
+      const sqlId = await sqlData.raw.insertId;
+      resolve(sqlId);
     }).then((res) => {
-      //console.log(name, res);
       this.findData.set(name, res);
       return res;
     });
