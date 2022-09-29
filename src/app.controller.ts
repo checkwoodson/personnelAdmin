@@ -9,8 +9,4 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
-  @Get('/ddd')
-  getDDD(): string {
-    return 'dda';
-  }
 }

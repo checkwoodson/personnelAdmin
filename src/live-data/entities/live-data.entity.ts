@@ -3,23 +3,42 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   CreateDateColumn,
+  Index,
 } from 'typeorm';
 @Entity('live_data')
-export class LiveData {
-  @PrimaryGeneratedColumn('rowid')
+export class LiveDataEntity {
+  @PrimaryGeneratedColumn()
   id: number;
+  @Index()
+  @Column()
+  anchor_id: number;
 
+  @Index()
   @Column()
-  game_Name: string;
+  game_id: number;
+  @Index()
   @Column()
-  live_belong: string;
+  union_id: number;
 
-  @Column()
+  @Column({
+    type: 'decimal',
+  })
   live_water: number;
+
+  @CreateDateColumn({
+    type: 'timestamp',
+  })
+  date_time: Date; // 表格中的日期
 
   @CreateDateColumn({
     type: 'timestamp',
     name: 'create_date',
   })
-  create_date: Date;
+  create_time: Date;
+
+  @CreateDateColumn({
+    type: 'timestamp',
+    name: 'update_date',
+  })
+  update_time: Date;
 }

@@ -6,40 +6,27 @@ import {
   Patch,
   Param,
   Delete,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { LiveDataService } from './live-data.service';
-import { CreateLiveDatumDto } from './dto/create-live-datum.dto';
-import { UpdateLiveDatumDto } from './dto/update-live-datum.dto';
+import { Express } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('live_data')
 export class LiveDataController {
   constructor(private readonly liveDataService: LiveDataService) {}
-
-  @Post()
-  create(@Body() createLiveDatumDto: CreateLiveDatumDto) {
-    return this.liveDataService.create(createLiveDatumDto);
-  }
-
   @Get()
-  findAll() {
-    return this.liveDataService.findAll();
+  test() {
+    return '这是个测试是否跨域的接口';
   }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.liveDataService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateLiveDatumDto: UpdateLiveDatumDto,
-  ) {
-    return this.liveDataService.update(+id, updateLiveDatumDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.liveDataService.remove(+id);
-  }
+  // fileupload 单独抽离
+  // @Post('upload')
+  // @UseInterceptors(FileInterceptor('file'))
+  // uploadFile(
+  //   @UploadedFile()
+  //   file: Express.Multer.File,
+  // ) {
+  //   return this.liveDataService.uploadFile(file);
+  // }
 }
