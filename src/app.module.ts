@@ -12,9 +12,10 @@ import { FileModule } from './file/file.module';
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: '127.0.0.1',
-      port: 3306,
+      port: 3307,
       username: 'root',
-      password: 'Devops2020',
+      // password: 'Devops2020',
+      password: '123456',
       database: 'personnel',
       entities: ['dist/**/entities/*.entity{.ts,.js}'],
       synchronize: true,
