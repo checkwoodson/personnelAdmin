@@ -25,8 +25,8 @@ export class LiveDataEntity {
   })
   live_water: number;
 
-  @CreateDateColumn({
-    type: 'timestamp',
+  @Column({
+    type: 'date',
   })
   date_time: Date; // 表格中的日期
 

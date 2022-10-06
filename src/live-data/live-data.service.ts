@@ -8,7 +8,8 @@ import { UnionEntity } from './entities/union.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Worker } from 'worker_threads';
-import { resolve } from 'path';
+import { uniqueFunc } from '../utils/common';
+import * as dayjs from 'dayjs';
 
 @Injectable()
 export class LiveDataService {
@@ -22,7 +23,6 @@ export class LiveDataService {
     @InjectRepository(UnionEntity)
     private union: Repository<UnionEntity>,
   ) {}
-  private findData = new Map();
   @OnEvent('order.uploadSuccess', { async: true })
   async handleFileUploadSuccess(file) {
     const wb = xlsx.readFile(file.path, {
@@ -40,7 +40,7 @@ export class LiveDataService {
     });
     return new Promise((resolve, reject) => {
       worker.on('message', (val) => {
-        this.insertData(val);
+        this.handleData(val);
         resolve(val);
       });
       worker.on('error', reject);
@@ -51,46 +51,69 @@ export class LiveDataService {
       });
     });
   }
-  async insertData(data) {
-    await this.getSqlName(this.games);
-    await this.getSqlName(this.anchors);
-    data.forEach(async (item) => {
-      //const gameId = await this.getSqlId(item.gameName, this.games);
-      const anchor = this.uniqueFunc(item[item.gameName], 'anchor');
-      anchor.forEach(async (item) => {
-        if (item.anchor === '') return;
-        await this.getSqlId(item.anchor, this.anchors);
-      });
+
+  async handleData(data) {
+    // 这一步只是对子表的数据进行筛查插入
+    const gameData = data.map((item) => {
+      this.sqlInsert(this.games, item.gameName);
+      ['anchor', 'union'].forEach((sqlName) =>
+        uniqueFunc(item[item.gameName], sqlName).map(
+          (item) =>
+            item !== '' &&
+            this.sqlInsert(
+              sqlName === 'anchor' ? this.anchors : this.union,
+              item,
+            ),
+        ),
+      );
+      return item;
     });
+    this.insertLiveData(gameData);
   }
-  uniqueFunc(arr, uniId) {
-    let obj = {};
-    return arr.reduce((accum, item) => {
-      obj[item[uniId]] ? '' : (obj[item[uniId]] = true && accum.push(item));
-      return accum;
-    }, []);
+  // 插入总表
+  async insertLiveData(gameData) {
+    const getGameId = await this.getSqlName(this.games);
+    const getUnionId = await this.getSqlName(this.union);
+    const getAnchorId = await this.getSqlName(this.anchors);
+    if ([getGameId, getUnionId, getAnchorId].every((item) => item.size > 0)) {
+      gameData.forEach((item) => {
+        item[item.gameName].forEach(async (el) => {
+          const formatDate = dayjs(el.date_time).format('YYYY-MM-DD');
+          !!el.anchor &&
+            el.live_water !== '/' &&
+            el.live_water !== '' &&
+            !!formatDate &&
+            (await this.liveData.insert({
+              anchor_id: getAnchorId.get(el.anchor),
+              game_id: getGameId.get(item.gameName),
+              union_id: getUnionId.get(el.union),
+              live_water: el.live_water,
+              date_time: formatDate,
+            }));
+        });
+      });
+    }
   }
+  // 插入数据库
+  async sqlInsert(entities, name) {
+    const getName = await this.getSqlName(entities);
+    // 没有查到就插入数据
+    !getName.get(name) && (await entities.insert({ name }));
+  }
+
   // 查询子表的id和name
   async getSqlName(sqlName) {
+    const findData = new Map();
     const sqlData = await sqlName.find();
     sqlData &&
       sqlData.forEach((item) => {
-        this.findData.set(item.name, item.id);
+        findData.set(item.name, item.id);
       });
-    return this.findData;
+    return findData;
   }
-  async getSqlId(name, entity) {
-    let sqlId = this.findData.get(name);
-    if (sqlId) {
-      return sqlId;
-    }
-    return new Promise(async (resolve) => {
-      const sqlData = await entity.insert({ name });
-      const sqlId = await sqlData.raw.insertId;
-      resolve(sqlId);
-    }).then((res) => {
-      this.findData.set(name, res);
-      return res;
-    });
+
+  // 查询excel数据并做处理
+  getGameData(): Promise<any> {
+    return;
   }
 }
