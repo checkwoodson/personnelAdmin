@@ -84,9 +84,9 @@ export class LiveDataService {
             el.live_water !== '' &&
             !!formatDate &&
             (await this.liveData.insert({
-              anchor_id: getAnchorId.get(el.anchor),
-              game_id: getGameId.get(item.gameName),
-              union_id: getUnionId.get(el.union),
+              anchor: getAnchorId.get(el.anchor),
+              game: getGameId.get(item.gameName),
+              union: getUnionId.get(el.union),
               live_water: el.live_water,
               date_time: formatDate,
             }));
@@ -114,6 +114,8 @@ export class LiveDataService {
 
   // 查询excel数据并做处理
   getGameData(): Promise<any> {
-    return;
+    return this.liveData.find({
+      relations: ['anchor', 'game', 'union'],
+    });
   }
 }
