@@ -5,7 +5,7 @@ import { AnchorsEntity } from './entities/anchors.entity';
 import { GamesEntity } from './entities/games.entity';
 import { LiveDataEntity } from './entities/live-data.entity';
 import { UnionEntity } from './entities/union.entity';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Worker } from 'worker_threads';
 import { uniqueFunc } from '../utils/common';

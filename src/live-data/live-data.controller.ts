@@ -1,24 +1,16 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, HttpStatus } from '@nestjs/common';
 import { LiveDataService } from './live-data.service';
 import { paginationDto } from './dto/get-pagination.dto';
 @Controller('live_data')
 export class LiveDataController {
   constructor(private readonly liveDataService: LiveDataService) {}
   @Post()
-  getExcelData(@Body() pageData: paginationDto) {
-    const { limit, page } = pageData;
+  getExcelData(@Body() getLiveDataDto: paginationDto) {
+    const { page, limit } = getLiveDataDto;
     if (page <= 0 || typeof page !== 'number') {
       return {
-        code: 400,
-        message: 'page小于0或者不是数字类型',
+        code: HttpStatus.BAD_REQUEST,
+        message: '页码错误，请重新检查',
       };
     }
     return this.liveDataService.getGameData(page, limit);
