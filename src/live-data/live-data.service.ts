@@ -5,11 +5,12 @@ import { AnchorsEntity } from './entities/anchors.entity';
 import { GamesEntity } from './entities/games.entity';
 import { LiveDataEntity } from './entities/live-data.entity';
 import { UnionEntity } from './entities/union.entity';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Worker } from 'worker_threads';
 import { uniqueFunc } from '../utils/common';
 import * as dayjs from 'dayjs';
+import { AllLiveDatumDto } from './dto/live-datum.dto';
 
 @Injectable()
 export class LiveDataService {
@@ -113,9 +114,28 @@ export class LiveDataService {
   }
 
   // 查询excel数据并做处理
-  getGameData(): Promise<any> {
-    return this.liveData.find({
+  async getGameData(page = 1, limit = 10): Promise<AllLiveDatumDto> {
+    const [data, total] = await this.liveData.findAndCount({
       relations: ['anchor', 'game', 'union'],
+      order: {
+        date_time: 'ASC',
+      },
+      skip: (page - 1) * limit,
+      take: limit,
     });
+    const handleData = await data.map((item) => {
+      return {
+        ...item,
+        anchor: item.anchor.name,
+        game: item.game.name,
+        union: item.union.name,
+      };
+    });
+    return {
+      total,
+      page,
+      limit,
+      data: handleData,
+    };
   }
 }
