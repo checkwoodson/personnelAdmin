@@ -3,27 +3,18 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   CreateDateColumn,
-  ManyToOne,
-  JoinColumn,
 } from 'typeorm';
-import { AnchorsEntity } from './anchors.entity';
-import { GamesEntity } from './games.entity';
-import { UnionEntity } from './union.entity';
+
 @Entity('live_data')
 export class LiveDataEntity {
   @PrimaryGeneratedColumn()
   id: number;
-  @ManyToOne(() => AnchorsEntity)
-  @JoinColumn({ name: 'anchor_id' })
-  anchor: AnchorsEntity;
-
-  @ManyToOne(() => GamesEntity)
-  @JoinColumn({ name: 'game_id' })
-  game: GamesEntity;
-  @ManyToOne(() => UnionEntity)
-  @JoinColumn({ name: 'union_id' })
-  union: UnionEntity;
-
+  @Column()
+  anchor_id: number;
+  @Column()
+  game_id: number;
+  @Column()
+  union_id: number;
   @Column({
     type: 'decimal',
   })

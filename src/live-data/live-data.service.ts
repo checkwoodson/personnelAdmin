@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import { Worker } from 'worker_threads';
 import { uniqueFunc } from '../utils/common';
 import * as dayjs from 'dayjs';
-
+import { getLiveDataDto } from './dto/get-live-datum.dto';
 @Injectable()
 export class LiveDataService {
   constructor(
@@ -72,9 +72,11 @@ export class LiveDataService {
   }
   // 插入总表
   async insertLiveData(gameData) {
-    const getGameId = await this.getSqlName(this.games);
-    const getUnionId = await this.getSqlName(this.union);
-    const getAnchorId = await this.getSqlName(this.anchors);
+    const [getGameId, getUnionId, getAnchorId] = await Promise.all([
+      this.getSqlName(this.games),
+      this.getSqlName(this.union),
+      this.getSqlName(this.anchors),
+    ]);
     if ([getGameId, getUnionId, getAnchorId].every((item) => item.size > 0)) {
       gameData.forEach((item) => {
         item[item.gameName].forEach(async (el) => {
@@ -84,9 +86,9 @@ export class LiveDataService {
             el.live_water !== '' &&
             !!formatDate &&
             (await this.liveData.insert({
-              anchor: getAnchorId.get(el.anchor),
-              game: getGameId.get(item.gameName),
-              union: getUnionId.get(el.union),
+              anchor_id: getAnchorId.get(el.anchor),
+              game_id: getGameId.get(item.gameName),
+              union_id: getUnionId.get(el.union),
               live_water: el.live_water,
               date_time: formatDate,
             }));
@@ -102,20 +104,44 @@ export class LiveDataService {
   }
 
   // 查询子表的id和name
-  async getSqlName(sqlName) {
+  async getSqlName(sqlName, getName = false) {
     const findData = new Map();
     const sqlData = await sqlName.find();
     sqlData &&
       sqlData.forEach((item) => {
-        findData.set(item.name, item.id);
+        !getName
+          ? findData.set(item.name, item.id)
+          : findData.set(item.id, item.name);
       });
     return findData;
   }
 
   // 查询excel数据并做处理
-  getGameData(): Promise<any> {
-    return this.liveData.find({
-      relations: ['anchor', 'game', 'union'],
+  async getGameData(page = 1, limit = 10): Promise<getLiveDataDto> {
+    const [getAnchorName, getGamesName, getUnionName] = await Promise.all([
+      this.getSqlName(this.anchors, true),
+      this.getSqlName(this.games, true),
+      this.getSqlName(this.union, true),
+    ]);
+    const [handleData, total] = await this.liveData.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
     });
+    const data = handleData.map((item) => {
+      return {
+        id: item.id,
+        anchor: getAnchorName.get(item.anchor_id),
+        game: getGamesName.get(item.game_id),
+        union: getUnionName.get(item.union_id),
+        live_water: item.live_water,
+        date_time: item.date_time,
+      };
+    });
+    return {
+      total,
+      page,
+      limit,
+      data,
+    };
   }
 }
