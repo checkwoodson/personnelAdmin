@@ -15,4 +15,8 @@ export class LiveDataController {
     }
     return this.liveDataService.getGameData(page, limit);
   }
+  @Get('getAllParameters')
+  getAllParameters() {
+    return this.liveDataService.getAllParameters();
+  }
 }

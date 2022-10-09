@@ -1,11 +1,11 @@
-import { Injectable, HttpStatus } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import * as xlsx from 'xlsx';
 import { AnchorsEntity } from './entities/anchors.entity';
 import { GamesEntity } from './entities/games.entity';
 import { LiveDataEntity } from './entities/live-data.entity';
 import { UnionEntity } from './entities/union.entity';
-import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Worker } from 'worker_threads';
 import { uniqueFunc } from '../utils/common';
@@ -99,11 +99,11 @@ export class LiveDataService {
   // 插入数据库
   async sqlInsert(entities, name) {
     const getName = await this.getSqlName(entities);
-    // 没有查到就插入数据
+    // 没有查到id就插入数据
     !getName.get(name) && (await entities.insert({ name }));
   }
 
-  // 查询子表的id和name
+  // 查询子表的id或name
   async getSqlName(sqlName, getName = false) {
     const findData = new Map();
     const sqlData = await sqlName.find();
@@ -126,15 +126,19 @@ export class LiveDataService {
     const [handleData, total] = await this.liveData.findAndCount({
       skip: (page - 1) * limit,
       take: limit,
+      // where: {
+      //   game_id: 3,
+      // },
     });
     const data = handleData.map((item) => {
+      const { id, live_water, date_time, anchor_id, game_id, union_id } = item;
       return {
-        id: item.id,
-        anchor: getAnchorName.get(item.anchor_id),
-        game: getGamesName.get(item.game_id),
-        union: getUnionName.get(item.union_id),
-        live_water: item.live_water,
-        date_time: item.date_time,
+        id,
+        anchor: getAnchorName.get(anchor_id),
+        game: getGamesName.get(game_id),
+        union: getUnionName.get(union_id),
+        live_water,
+        date_time,
       };
     });
     return {
@@ -142,6 +146,13 @@ export class LiveDataService {
       page,
       limit,
       data,
+    };
+  }
+  async getAllParameters() {
+    return {
+      anchorsList: await this.anchors.find(),
+      games: await this.games.find(),
+      union: await this.union.find(),
     };
   }
 }
