@@ -54,25 +54,30 @@ export class LiveDataService {
 
   async handleData(data) {
     // 这一步只是对子表的数据进行筛查插入
-    const gameData = data.map((item) => {
+    const gameData = await data.map((item) => {
       this.sqlInsert(this.games, item.gameName);
+      // ['anchor', 'union'].forEach((sqlName) => {
+      //   const d = uniqueFunc(item[item.gameName], sqlName).filter(
+      //     (e) => e !== '',
+      //   );
+      // });
       ['anchor', 'union'].forEach((sqlName) =>
         uniqueFunc(item[item.gameName], sqlName).map(
-          (item) =>
+          async (item) =>
             item !== '' &&
-            this.sqlInsert(
+            (await this.sqlInsert(
               sqlName === 'anchor' ? this.anchors : this.union,
               item,
-            ),
+            )),
         ),
       );
       return item;
     });
-    this.insertLiveData(gameData);
+    // this.insertLiveData(gameData);
   }
   // 插入总表
   async insertLiveData(gameData) {
-    const [getGameId, getUnionId, getAnchorId] = await Promise.all([
+    let [getGameId, getUnionId, getAnchorId] = await Promise.all([
       this.getSqlName(this.games),
       this.getSqlName(this.union),
       this.getSqlName(this.anchors),
@@ -94,6 +99,8 @@ export class LiveDataService {
             }));
         });
       });
+    } else {
+      this.insertLiveData(gameData);
     }
   }
   // 插入数据库
@@ -117,18 +124,19 @@ export class LiveDataService {
   }
 
   // 查询excel数据并做处理
-  async getGameData(page = 1, limit = 10): Promise<getLiveDataDto> {
+  async getGameData(getLiveDataDto): Promise<getLiveDataDto> {
+    const { page, pageSize, gameNameId } = getLiveDataDto;
     const [getAnchorName, getGamesName, getUnionName] = await Promise.all([
       this.getSqlName(this.anchors, true),
       this.getSqlName(this.games, true),
       this.getSqlName(this.union, true),
     ]);
     const [handleData, total] = await this.liveData.findAndCount({
-      skip: (page - 1) * limit,
-      take: limit,
-      // where: {
-      //   game_id: 3,
-      // },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      where: {
+        game_id: gameNameId,
+      },
     });
     const data = handleData.map((item) => {
       const { id, live_water, date_time, anchor_id, game_id, union_id } = item;
@@ -144,11 +152,11 @@ export class LiveDataService {
     return {
       total,
       page,
-      limit,
+      pageSize,
       data,
     };
   }
-  async getAllParameters() {
+  async getAllParameters(): Promise<any> {
     return {
       anchorsList: await this.anchors.find(),
       games: await this.games.find(),

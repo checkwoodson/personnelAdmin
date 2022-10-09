@@ -10,6 +10,6 @@ interface getLiveData {
 export class getLiveDataDto {
   total: number;
   page: number;
-  limit: number;
+  pageSize: number;
   data: Array<getLiveData>;
 }
