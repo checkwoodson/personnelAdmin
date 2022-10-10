@@ -6,11 +6,12 @@ import { GamesEntity } from './entities/games.entity';
 import { LiveDataEntity } from './entities/live-data.entity';
 import { UnionEntity } from './entities/union.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { Worker } from 'worker_threads';
 import { uniqueFunc } from '../utils/common';
 import * as dayjs from 'dayjs';
 import { getLiveDataDto } from './dto/get-live-datum.dto';
+import { HttpErrorByCode } from '@nestjs/common/utils/http-error-by-code.util';
 @Injectable()
 export class LiveDataService {
   constructor(
@@ -54,26 +55,33 @@ export class LiveDataService {
 
   async handleData(data) {
     // 这一步只是对子表的数据进行筛查插入
-    const gameData = await data.map((item) => {
-      this.sqlInsert(this.games, item.gameName);
-      // ['anchor', 'union'].forEach((sqlName) => {
-      //   const d = uniqueFunc(item[item.gameName], sqlName).filter(
-      //     (e) => e !== '',
-      //   );
-      // });
-      ['anchor', 'union'].forEach((sqlName) =>
-        uniqueFunc(item[item.gameName], sqlName).map(
-          async (item) =>
-            item !== '' &&
-            (await this.sqlInsert(
-              sqlName === 'anchor' ? this.anchors : this.union,
-              item,
-            )),
-        ),
-      );
-      return item;
+    const gameName = data.map((item) => {
+      return { name: item.gameName };
     });
-    // this.insertLiveData(gameData);
+    const dataFlat = data
+      .map((item) => {
+        return item[item.gameName];
+      })
+      .flat();
+    const [anchors, unions] = ['anchor', 'union'].map((item) => {
+      return uniqueFunc(dataFlat, item)
+        .filter((el) => el !== '')
+        .map((item) => {
+          return { name: item };
+        });
+    });
+    Promise.allSettled([
+      this.sqlInsert(this.union, unions),
+      this.sqlInsert(this.anchors, anchors),
+      this.sqlInsert(this.games, gameName),
+    ])
+      .then((res) => {
+        res.every((item) => item.status === 'fulfilled') &&
+          this.insertLiveData(data);
+      })
+      .catch((err) => {
+        console.error(err, '子表数据插入失败');
+      });
   }
   // 插入总表
   async insertLiveData(gameData) {
@@ -99,15 +107,14 @@ export class LiveDataService {
             }));
         });
       });
-    } else {
-      this.insertLiveData(gameData);
     }
   }
   // 插入数据库
   async sqlInsert(entities, name) {
     const getName = await this.getSqlName(entities);
-    // 没有查到id就插入数据
-    !getName.get(name) && (await entities.insert({ name }));
+    // 直接一次性插入
+    const filterName = name.filter((item) => !getName.get(item.name));
+    await entities.insert(filterName);
   }
 
   // 查询子表的id或name
@@ -125,7 +132,7 @@ export class LiveDataService {
 
   // 查询excel数据并做处理
   async getGameData(getLiveDataDto): Promise<getLiveDataDto> {
-    const { page, pageSize, gameNameId } = getLiveDataDto;
+    const { page, pageSize, gameNameId, startDay, endDay } = getLiveDataDto;
     const [getAnchorName, getGamesName, getUnionName] = await Promise.all([
       this.getSqlName(this.anchors, true),
       this.getSqlName(this.games, true),
@@ -136,6 +143,7 @@ export class LiveDataService {
       take: pageSize,
       where: {
         game_id: gameNameId,
+        date_time: Between(startDay, endDay),
       },
     });
     const data = handleData.map((item) => {
