@@ -11,7 +11,6 @@ import { Worker } from 'worker_threads';
 import { uniqueFunc } from '../utils/common';
 import * as dayjs from 'dayjs';
 import { getLiveDataDto } from './dto/get-live-datum.dto';
-import { HttpErrorByCode } from '@nestjs/common/utils/http-error-by-code.util';
 @Injectable()
 export class LiveDataService {
   constructor(
