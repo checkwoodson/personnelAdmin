@@ -57,11 +57,7 @@ export class LiveDataService {
     const gameName = data.map((item) => {
       return { name: item.gameName };
     });
-    const dataFlat = data
-      .map((item) => {
-        return item[item.gameName];
-      })
-      .flat();
+    const dataFlat = data.map((item) => item[item.gameName]).flat();
     const [anchors, unions] = ['anchor', 'union'].map((item) => {
       return uniqueFunc(dataFlat, item)
         .filter((el) => el !== '')
@@ -145,7 +141,7 @@ export class LiveDataService {
         date_time: Between(startDay, endDay),
       },
     });
-    const data = handleData.map((item) => {
+    const data = handleData.map((item,index) => {
       const { id, live_water, date_time, anchor_id, game_id, union_id } = item;
       return {
         id,
@@ -155,7 +151,7 @@ export class LiveDataService {
         live_water,
         date_time,
       };
-    });
+    })
     return {
       total,
       page,
