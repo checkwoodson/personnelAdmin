@@ -5,7 +5,7 @@ import { AnchorsEntity } from './entities/anchors.entity';
 import { GamesEntity } from './entities/games.entity';
 import { LiveDataEntity } from './entities/live-data.entity';
 import { UnionEntity } from './entities/union.entity';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
 import { Worker } from 'worker_threads';
 import { uniqueFunc } from '../utils/common';
@@ -126,13 +126,21 @@ export class LiveDataService {
   }
 
   // 查询excel数据并做处理
-  async getGameData(getLiveDataDto): Promise<getLiveDataDto> {
+  async getGameData(getLiveDataDto): Promise<any> {
     const { page, pageSize, gameNameId, startDay, endDay } = getLiveDataDto;
     const [getAnchorName, getGamesName, getUnionName] = await Promise.all([
       this.getSqlName(this.anchors, true),
       this.getSqlName(this.games, true),
       this.getSqlName(this.union, true),
     ]);
+
+    // m = maps
+    // data.each(function (key, value) {
+    //  key = value.gameID + value.AnId + value.UnionId
+    //    if(m.has(key)) {
+    //       m[] = value
+    //}
+    //}
     const [handleData, total] = await this.liveData.findAndCount({
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -141,7 +149,19 @@ export class LiveDataService {
         date_time: Between(startDay, endDay),
       },
     });
-    const data = handleData.map((item,index) => {
+    const obj = {};
+    const a = handleData.map((item) => {
+      let key = `${item.game_id} -${item.anchor_id} - ${item.union_id}`;
+      console.log(key);
+      if (!obj[key]) {
+        obj[key] = {
+          gameId: item.game_id,
+          child: [],
+        };
+      }
+    });
+    console.log(Object.values(obj));
+    const data = handleData.map((item) => {
       const { id, live_water, date_time, anchor_id, game_id, union_id } = item;
       return {
         id,
@@ -151,7 +171,7 @@ export class LiveDataService {
         live_water,
         date_time,
       };
-    })
+    });
     return {
       total,
       page,
