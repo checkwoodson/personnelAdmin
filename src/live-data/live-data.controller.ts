@@ -13,10 +13,10 @@ export class LiveDataController {
   constructor(private readonly liveDataService: LiveDataService) {}
   @Post()
   getExcelData(@Body() getLiveDataDto: paginationDto) {
-    const { page } = getLiveDataDto;
-    if (page <= 0 || typeof page !== 'number') {
-      throw new HttpException('页码错误请重新检查', HttpStatus.FORBIDDEN);
-    }
+    // const { page } = getLiveDataDto;
+    // if (page <= 0 || typeof page !== 'number') {
+    //   throw new HttpException('页码错误请重新检查', HttpStatus.FORBIDDEN);
+    // }
     return this.liveDataService.getGameData(getLiveDataDto);
   }
   @Get('getAllParameters')
