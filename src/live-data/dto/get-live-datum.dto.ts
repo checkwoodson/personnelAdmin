@@ -1,10 +1,15 @@
 interface getLiveData {
   id: number;
   live_water: number;
-  date_time: Date;
   anchor: string;
   game: string;
   union: string;
+  children: [
+    {
+      live_water: number;
+      date_time: string;
+    },
+  ];
 }
 
 export class getLiveDataDto {

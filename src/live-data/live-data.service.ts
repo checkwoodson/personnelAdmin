@@ -126,7 +126,7 @@ export class LiveDataService {
   }
 
   // 查询excel数据并做处理
-  async getGameData(getLiveDataDto): Promise<any> {
+  async getGameData(getLiveDataDto): Promise<getLiveDataDto> {
     const { page, pageSize, gameNameId, startDay, endDay } = getLiveDataDto;
     const [getAnchorName, getGamesName, getUnionName] = await Promise.all([
       this.getSqlName(this.anchors, true),
@@ -134,49 +134,53 @@ export class LiveDataService {
       this.getSqlName(this.union, true),
     ]);
 
-    // m = maps
-    // data.each(function (key, value) {
-    //  key = value.gameID + value.AnId + value.UnionId
-    //    if(m.has(key)) {
-    //       m[] = value
-    //}
-    //}
     const [handleData, total] = await this.liveData.findAndCount({
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      // skip: (page - 1) * pageSize,
+      // take: pageSize,
+      order: {
+        anchor_id: 'ASC',
+        game_id: 'ASC',
+        date_time: 'ASC',
+      },
       where: {
         game_id: gameNameId,
         date_time: Between(startDay, endDay),
       },
     });
     const obj = {};
-    const a = handleData.map((item) => {
-      let key = `${item.game_id} -${item.anchor_id} - ${item.union_id}`;
-      console.log(key);
-      if (!obj[key]) {
+    handleData.forEach((item) => {
+      const { id, live_water, date_time, anchor_id, game_id, union_id } = item;
+      let key = `${game_id} -${anchor_id} - ${union_id}`;
+      if (obj[key]) {
+        obj[key].children.push({
+          live_water: +live_water,
+          date_time,
+        });
+        obj[key].live_water += +live_water;
+      } else {
         obj[key] = {
-          gameId: item.game_id,
-          child: [],
+          id,
+          anchor: getAnchorName.get(anchor_id),
+          game: getGamesName.get(game_id),
+          union: getUnionName.get(union_id),
+          children: [{ live_water: +live_water, date_time }],
+          live_water: +live_water,
         };
       }
-    });
-    console.log(Object.values(obj));
-    const data = handleData.map((item) => {
-      const { id, live_water, date_time, anchor_id, game_id, union_id } = item;
-      return {
-        id,
-        anchor: getAnchorName.get(anchor_id),
-        game: getGamesName.get(game_id),
-        union: getUnionName.get(union_id),
-        live_water,
-        date_time,
-      };
+      // return {
+      //   id,
+      //   anchor: getAnchorName.get(anchor_id),
+      //   game: getGamesName.get(game_id),
+      //   union: getUnionName.get(union_id),
+      //   live_water,
+      //   date_time,
+      // };
     });
     return {
       total,
       page,
       pageSize,
-      data,
+      data: Object.values(obj),
     };
   }
   async getAllParameters(): Promise<any> {
