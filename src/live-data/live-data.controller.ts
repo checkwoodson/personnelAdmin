@@ -5,6 +5,7 @@ import {
   Body,
   HttpStatus,
   HttpException,
+  Query,
 } from '@nestjs/common';
 import { LiveDataService } from './live-data.service';
 import { paginationDto } from './dto/get-pagination.dto';
@@ -19,8 +20,12 @@ export class LiveDataController {
     // }
     return this.liveDataService.getGameData(getLiveDataDto);
   }
-  @Get('getAllParameters')
+  @Get('getAllGamesId')
   getAllParameters() {
-    return this.liveDataService.getAllParameters();
+    return this.liveDataService.getAllGames();
+  }
+  @Get('getUnionAnchor')
+  getUnionIdAndAnchorsId(@Query() gamesObj) {
+    return this.liveDataService.getUnionAnchors(gamesObj);
   }
 }

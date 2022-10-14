@@ -6,11 +6,16 @@ import { GamesEntity } from './entities/games.entity';
 import { LiveDataEntity } from './entities/live-data.entity';
 import { UnionEntity } from './entities/union.entity';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
-import { Between, Repository } from 'typeorm';
+import {
+  Between,
+  Repository,
+  UsingJoinTableOnlyOnOneSideAllowedError,
+} from 'typeorm';
 import { Worker } from 'worker_threads';
 import { uniqueFunc } from '../utils/common';
 import * as dayjs from 'dayjs';
 import { getLiveDataDto } from './dto/get-live-datum.dto';
+import { paginationDto } from './dto/get-pagination.dto';
 @Injectable()
 export class LiveDataService {
   constructor(
@@ -126,8 +131,9 @@ export class LiveDataService {
   }
 
   // 查询excel数据并做处理
-  async getGameData(getLiveDataDto): Promise<getLiveDataDto> {
-    const { page, pageSize, gameNameId, startDay, endDay } = getLiveDataDto;
+  async getGameData(pagination: paginationDto): Promise<getLiveDataDto> {
+    const { page, pageSize, gameNameId, startDay, endDay, unionId, anchorId } =
+      pagination;
     const [getAnchorName, getGamesName, getUnionName] = await Promise.all([
       this.getSqlName(this.anchors, true),
       this.getSqlName(this.games, true),
@@ -144,6 +150,8 @@ export class LiveDataService {
       },
       where: {
         game_id: gameNameId,
+        union_id: unionId,
+        anchor_id: anchorId,
         date_time: Between(startDay, endDay),
       },
     });
@@ -183,11 +191,45 @@ export class LiveDataService {
       data: Object.values(obj),
     };
   }
-  async getAllParameters(): Promise<any> {
-    return {
-      anchorsList: await this.anchors.find(),
-      games: await this.games.find(),
-      union: await this.union.find(),
-    };
+  getAllGames(): Promise<any> {
+    return this.games.find();
+  }
+
+  async getUnionAnchors(Id) {
+    const { gamesId, unionId } = Id;
+    const tempObj = {};
+    const [getAnchorName, getUnionName] = await Promise.all([
+      this.getSqlName(this.anchors, true),
+      this.getSqlName(this.union, true),
+    ]);
+    const data = await this.liveData.find({
+      where: {
+        game_id: gamesId,
+        union_id: unionId,
+      },
+    });
+    data.forEach((item) => {
+      const keys = unionId
+        ? item.anchor_id
+        : `${item.union_id}-${item.anchor_id}`;
+      if (!tempObj[keys]) {
+        tempObj[keys] = unionId
+          ? {
+              id: item.anchor_id,
+              name: getAnchorName.get(item.anchor_id),
+            }
+          : {
+              union: {
+                id: item.union_id,
+                name: getUnionName.get(item.union_id),
+              },
+              anchor: {
+                id: item.anchor_id,
+                name: getAnchorName.get(item.anchor_id),
+              },
+            };
+      }
+    });
+    return Object.values(tempObj);
   }
 }

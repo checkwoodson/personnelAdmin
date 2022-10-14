@@ -1,7 +1,9 @@
 export class paginationDto {
-  limit: number;
+  pageSize: number;
   page: number;
-  gameName: number;
+  gameNameId: number;
   startDay: string;
   endDay: string;
+  unionId?: number;
+  anchorId?: number;
 }

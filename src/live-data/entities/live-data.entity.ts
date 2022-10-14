@@ -23,7 +23,7 @@ export class LiveDataEntity {
   @Column({
     type: 'date',
   })
-  date_time: Date; // 表格中的日期
+  date_time: string; // 表格中的日期
 
   @CreateDateColumn({
     type: 'timestamp',
