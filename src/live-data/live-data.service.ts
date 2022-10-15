@@ -6,11 +6,7 @@ import { GamesEntity } from './entities/games.entity';
 import { LiveDataEntity } from './entities/live-data.entity';
 import { UnionEntity } from './entities/union.entity';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
-import {
-  Between,
-  Repository,
-  UsingJoinTableOnlyOnOneSideAllowedError,
-} from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { Worker } from 'worker_threads';
 import { uniqueFunc } from '../utils/common';
 import * as dayjs from 'dayjs';
@@ -141,8 +137,6 @@ export class LiveDataService {
     ]);
 
     const [handleData, total] = await this.liveData.findAndCount({
-      // skip: (page - 1) * pageSize,
-      // take: pageSize,
       order: {
         anchor_id: 'ASC',
         game_id: 'ASC',
@@ -155,18 +149,18 @@ export class LiveDataService {
         date_time: Between(startDay, endDay),
       },
     });
-    const obj = {};
+    const getData = {};
     handleData.forEach((item) => {
       const { id, live_water, date_time, anchor_id, game_id, union_id } = item;
       let key = `${game_id} -${anchor_id} - ${union_id}`;
-      if (obj[key]) {
-        obj[key].children.push({
+      if (getData[key]) {
+        getData[key].children.push({
           live_water: +live_water,
           date_time,
         });
-        obj[key].live_water += +live_water;
+        getData[key].live_water += +live_water;
       } else {
-        obj[key] = {
+        getData[key] = {
           id,
           anchor: getAnchorName.get(anchor_id),
           game: getGamesName.get(game_id),
@@ -175,20 +169,12 @@ export class LiveDataService {
           live_water: +live_water,
         };
       }
-      // return {
-      //   id,
-      //   anchor: getAnchorName.get(anchor_id),
-      //   game: getGamesName.get(game_id),
-      //   union: getUnionName.get(union_id),
-      //   live_water,
-      //   date_time,
-      // };
     });
     return {
       total,
       page,
       pageSize,
-      data: Object.values(obj),
+      data: Object.values(getData),
     };
   }
   getAllGames(): Promise<any> {
@@ -197,7 +183,13 @@ export class LiveDataService {
 
   async getUnionAnchors(Id) {
     const { gamesId, unionId } = Id;
-    const tempObj = {};
+    const AnchorData = {};
+    const unionAnchor = {
+      union: [],
+      anchor: [],
+    };
+
+    const flag = {};
     const [getAnchorName, getUnionName] = await Promise.all([
       this.getSqlName(this.anchors, true),
       this.getSqlName(this.union, true),
@@ -209,27 +201,30 @@ export class LiveDataService {
       },
     });
     data.forEach((item) => {
-      const keys = unionId
-        ? item.anchor_id
-        : `${item.union_id}-${item.anchor_id}`;
-      if (!tempObj[keys]) {
-        tempObj[keys] = unionId
-          ? {
-              id: item.anchor_id,
-              name: getAnchorName.get(item.anchor_id),
-            }
-          : {
-              union: {
-                id: item.union_id,
-                name: getUnionName.get(item.union_id),
-              },
-              anchor: {
-                id: item.anchor_id,
-                name: getAnchorName.get(item.anchor_id),
-              },
-            };
+      const anchorKeys = item.anchor_id;
+      const unionKeys = item.union_id;
+      if (!AnchorData[anchorKeys] && unionId) {
+        AnchorData[anchorKeys] = {
+          id: anchorKeys,
+          name: getAnchorName.get(anchorKeys),
+        };
+      } else {
+        if (!flag[anchorKeys]) {
+          unionAnchor.anchor.push({
+            id: anchorKeys,
+            name: getAnchorName.get(anchorKeys),
+          });
+          flag[anchorKeys] = true;
+        }
+        if (!flag[unionKeys]) {
+          unionAnchor.union.push({
+            id: unionKeys,
+            name: getUnionName.get(unionKeys),
+          });
+          flag[unionKeys] = true;
+        }
       }
     });
-    return Object.values(tempObj);
+    return unionId ? Object.values(AnchorData) : unionAnchor;
   }
 }
