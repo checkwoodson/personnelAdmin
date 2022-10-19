@@ -188,7 +188,6 @@ export class LiveDataService {
       union: [],
       anchor: [],
     };
-
     const flag = {};
     const [getAnchorName, getUnionName] = await Promise.all([
       this.getSqlName(this.anchors, true),
@@ -216,12 +215,12 @@ export class LiveDataService {
           });
           flag[anchorKeys] = true;
         }
-        if (!flag[unionKeys]) {
+        if (flag[unionKeys] !== item.union_id) {
           unionAnchor.union.push({
             id: unionKeys,
             name: getUnionName.get(unionKeys),
           });
-          flag[unionKeys] = true;
+          flag[unionKeys] = item.union_id;
         }
       }
     });
