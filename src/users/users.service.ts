@@ -19,11 +19,11 @@ export class UsersService {
   ) {}
   // 注册
   async register(createUser: CreateUserDto) {
-    const { userName } = createUser;
+    const { user_name } = createUser;
     // 用户查询
     const existUser = await this.userRepository.find({
-      select: ['userName'],
-      where: { userName: userName },
+      select: ['user_name'],
+      where: { user_name: user_name },
     });
     if (existUser.length > 0) {
       throw new HttpException('用户名已存在', HttpStatus.BAD_REQUEST);
