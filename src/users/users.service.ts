@@ -28,7 +28,14 @@ export class UsersService {
     if (existUser.length > 0) {
       throw new HttpException('用户名已存在', HttpStatus.BAD_REQUEST);
     }
+    // 创建sql实体类
     const newUser = await this.userRepository.create(createUser);
-    return await this.userRepository.save(newUser);
+    //  插入数据
+    await this.userRepository.save(newUser);
+    return {
+      code: 200,
+      message: '注册成功',
+    };
   }
+  async login() {}
 }
