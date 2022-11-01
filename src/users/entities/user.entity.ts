@@ -12,7 +12,7 @@ export class User {
   //   length: 100,
   // })
   // nick_name: string;
-  @Column()
+  @Column({ select: false })
   password: string;
   // @Column()
   // avatar: string; // avatar
