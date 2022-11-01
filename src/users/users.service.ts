@@ -32,14 +32,9 @@ export class UsersService {
     const newUser = await this.userRepository.create(createUser);
     //  插入数据
     await this.userRepository.save(newUser);
-    const data = await this.userRepository.findOne({
+    return await this.userRepository.findOne({
       where: { user_name: user_name },
     });
-    return {
-      code: 200,
-      message: '注册成功',
-      data,
-    };
   }
   async login() {}
 }
