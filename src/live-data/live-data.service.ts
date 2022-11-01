@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import * as xlsx from 'xlsx';
 import { AnchorsEntity } from './entities/anchors.entity';
 import { GamesEntity } from './entities/games.entity';
 import { LiveDataEntity } from './entities/live-data.entity';
 import { UnionEntity } from './entities/union.entity';
-import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
 import { Worker } from 'worker_threads';
 import { uniqueFunc } from '../utils/common';
@@ -76,7 +76,7 @@ export class LiveDataService {
           this.insertLiveData(data);
       })
       .catch((err) => {
-        console.error(err, '子表数据插入失败');
+        throw new HttpException(err, 500);
       });
   }
   // 插入总表
