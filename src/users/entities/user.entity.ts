@@ -7,15 +7,15 @@ export class User {
   @Column({
     length: 100,
   })
-  userName: string;
-  @Column({
-    length: 100,
-  })
-  nickName: string;
-  @Column()
+  user_name: string;
+  // @Column({
+  //   length: 100,
+  // })
+  // nick_name: string;
+  @Column({ select: false })
   password: string;
-  @Column()
-  avatar: string; // avatar
+  // @Column()
+  // avatar: string; // avatar
   @Column()
   email: string;
   @Column({

@@ -19,16 +19,22 @@ export class UsersService {
   ) {}
   // 注册
   async register(createUser: CreateUserDto) {
-    const { userName } = createUser;
+    const { user_name } = createUser;
     // 用户查询
     const existUser = await this.userRepository.find({
-      select: ['userName'],
-      where: { userName: userName },
+      select: ['user_name'],
+      where: { user_name: user_name },
     });
     if (existUser.length > 0) {
       throw new HttpException('用户名已存在', HttpStatus.BAD_REQUEST);
     }
+    // 创建sql实体类
     const newUser = await this.userRepository.create(createUser);
-    return await this.userRepository.save(newUser);
+    //  插入数据
+    await this.userRepository.save(newUser);
+    return await this.userRepository.findOne({
+      where: { user_name: user_name },
+    });
   }
+  async login() {}
 }

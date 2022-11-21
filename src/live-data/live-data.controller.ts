@@ -3,21 +3,29 @@ import {
   Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
-  UseInterceptors,
-  UploadedFile,
+  HttpStatus,
+  HttpException,
+  Query,
 } from '@nestjs/common';
 import { LiveDataService } from './live-data.service';
-import { Express } from 'express';
-import { FileInterceptor } from '@nestjs/platform-express';
-
+import { paginationDto } from './dto/get-pagination.dto';
 @Controller('live_data')
 export class LiveDataController {
   constructor(private readonly liveDataService: LiveDataService) {}
-  @Get()
-  test() {
-    return '这是个测试是否跨域的接口';
+  @Post()
+  getExcelData(@Body() getLiveDataDto: paginationDto) {
+    // const { page } = getLiveDataDto;
+    // if (page <= 0 || typeof page !== 'number') {
+    //   throw new HttpException('页码错误请重新检查', HttpStatus.FORBIDDEN);
+    // }
+    return this.liveDataService.getGameData(getLiveDataDto);
+  }
+  @Get('getAllGamesId')
+  getAllParameters() {
+    return this.liveDataService.getAllGames();
+  }
+  @Get('getUnionAnchor')
+  getUnionIdAndAnchorsId(@Query() gamesObj) {
+    return this.liveDataService.getUnionAnchors(gamesObj);
   }
 }
